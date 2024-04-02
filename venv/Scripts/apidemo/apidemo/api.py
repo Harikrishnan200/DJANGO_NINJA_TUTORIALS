@@ -36,7 +36,7 @@ class BookInSchema(Schema):
     isbn: str 
 
 class BookPatchSchema(Schema):
-    id: Optional[int] = None
+    id: Optional[int] = None      #Optional[int]: This is a type hint indicating that the variable can be of type int or None. 
     title: Optional[str] = None
     author_id: Optional[int] = None
     description: Optional[str] = None
@@ -75,8 +75,25 @@ def delete_book(request, book_id):
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)})
     
-@api.patch("/books/{book_id}")    
+@api.patch("/books/{book_id}")       
 def edit_book(request, book_id: int, payload: BookPatchSchema):
     book = get_object_or_404(Book, id=book_id)
-    # Apply changes from payload to the book object here
-    return payload.dict(exclude_unset=True)   #The purpose of exclude_unset=True is to exclude fields that have not been set or have their default values.
+    
+    # Update book fields with values from payload
+    for field, value in payload.dict().items():
+        setattr(book, field, value)
+    
+    # Save the updated book object to the database
+    book.save()
+    
+    # Return a JSON response with the updated data
+    return JsonResponse({"success": True, "data": payload.dict()})     #The purpose of exclude_unset=True is to exclude fields that have not been set or have their default values.
+
+"""
+"payload": This is an instance of the BookPatchSchema class, which is likely a Pydantic model representing the data expected for patching a book (partial update).
+
+"payload.dict()": This method call converts the payload object into a dictionary. By default, it includes all fields defined in the schema, whether they have been explicitly set or not.
+
+"exclude_unset=True": This argument specifies that only fields that have been explicitly set with a value other than the default value should be included in the resulting dictionary. Fields that have not been set (i.e., unset fields) are excluded from the dictionary.
+"""
+
